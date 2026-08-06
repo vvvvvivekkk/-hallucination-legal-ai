@@ -8,6 +8,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![Qdrant](https://img.shields.io/badge/Qdrant-Vector%20DB-EA2845?logo=qdrant&logoColor=white)](https://qdrant.tech/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Paper](https://img.shields.io/badge/IEEE-Paper-ready-green)](docs/research/paper.md)
@@ -166,10 +167,10 @@ The core innovation:
   - Hallucination-detection entailment margins
 - Low-confidence answers are **flagged** with a warning banner rather than being presented as fact.
 
-### 12. Interactive UI & REST API
+### 12. Interactive Web App & REST API
 
-- FastAPI backend exposing `/ingest`, `/search`, `/ask`, `/evaluate`, `/health`.
-- Clean web UI (Streamlit) for document upload, querying, and evidence inspection.
+- FastAPI backend exposing `/api/ingest`, `/api/search`, `/api/query`, `/api/conversations/chat`, `/api/health`, plus auth and admin routes.
+- Next.js 15 web app with streaming chat, source search, document ingestion, settings, admin, and public share links.
 - Swagger/OpenAPI docs auto-generated at `/docs`.
 
 ### 13. Evaluation & Benchmarking Suite
@@ -185,7 +186,7 @@ The core innovation:
 ```
 ┌────────────────────────────────────────────────────────────────────────────┐
 │                            CLIENT LAYER                                    │
-│                    Web UI (Streamlit) · REST API · CLI                     │
+│                    Web UI (Next.js) · REST API · CLI                       │
 └───────────────────────────────────┬────────────────────────────────────────┘
                                     │ HTTP / JSON
 ┌───────────────────────────────────▼────────────────────────────────────────┐
@@ -233,117 +234,51 @@ The core innovation:
 ## 📁 Folder Structure
 
 ```
-legal-ai-rag/
-│
-├── app/
-│   ├── __init__.py
-│   ├── main.py                    # FastAPI entrypoint
-│   ├── config.py                  # Pydantic-settings based configuration
+.
+├── app/                          # FastAPI backend
+│   ├── main.py                   # App entrypoint, middleware, routers, lifespan
+│   ├── config.py                 # Pydantic-settings based configuration
 │   ├── api/
-│   │   ├── __init__.py
 │   │   ├── routes/
-│   │   │   ├── ingest.py          # POST /ingest
-│   │   │   ├── search.py          # GET  /search
-│   │   │   ├── ask.py             # POST /ask
-│   │   │   ├── evaluate.py        # POST /evaluate
-│   │   │   └── health.py          # GET  /health
-│   │   └── schemas/
-│   │       ├── ingest.py
-│   │       ├── search.py
-│   │       └── ask.py
-│   │
-│   ├── ingestion/
-│   │   ├── __init__.py
-│   │   ├── parser.py              # PDF/DOCX/HTML parsing
-│   │   ├── cleaner.py             # Normalization & noise removal
-│   │   ├── metadata.py            # Metadata extraction
-│   │   ├── chunker.py             # Summary-augmented chunking
-│   │   ├── summarizer.py          # Section-level summary generation
-│   │   └── embedder.py            # Embedding generation
-│   │
-│   ├── retrieval/
-│   │   ├── __init__.py
-│   │   ├── dense.py               # Dense vector search (Qdrant)
-│   │   ├── lexical.py             # BM25 lexical search
-│   │   ├── hybrid.py              # Hybrid fusion + RRF
-│   │   └── reranker.py            # Cross-encoder re-ranking
-│   │
-│   ├── generation/
-│   │   ├── __init__.py
-│   │   ├── prompt.py              # Prompt templates
-│   │   ├── llm.py                 # LLM client abstraction
-│   │   ├── claims.py              # Claim + citation extraction
-│   │   └── response.py            # Response assembly & formatting
-│   │
-│   ├── verification/
-│   │   ├── __init__.py
-│   │   ├── citation.py            # Citation existence & matching
-│   │   ├── entailment.py          # NLI-based evidence checking
-│   │   ├── hallucination.py       # Hallucination detection
-│   │   └── confidence.py          # Confidence scoring
-│   │
-│   ├── core/
-│   │   ├── __init__.py
-│   │   ├── logger.py              # Structured logging
-│   │   ├── metrics.py             # Metrics collection
-│   │   └── exceptions.py          # Domain exceptions
-│   │
-│   └── models/
-│       ├── __init__.py
-│       ├── document.py
-│       ├── chunk.py
-│       ├── claim.py
-│       └── response.py
+│   │   │   ├── auth.py           # register / login / refresh / logout / me
+│   │   │   ├── conversations.py  # CRUD, pin, search, export, share
+│   │   │   ├── chat.py           # non-stream + streaming chat, persists exchanges
+│   │   │   ├── share.py          # public GET /api/share/{slug}
+│   │   │   ├── admin.py          # users, stats, metrics (admin-only)
+│   │   │   ├── ingest.py         # /api/ingest, /api/index, /api/jobs
+│   │   │   ├── search.py         # POST /api/search (hybrid retrieval)
+│   │   │   ├── generation.py     # POST /api/query (stateless generation)
+│   │   │   └── health.py         # GET /api/health
+│   │   ├── dependencies.py       # DI for retriever / pipeline / settings
+│   │   ├── security_deps.py      # auth guards, rate limiter
+│   │   └── schemas.py            # Pydantic request/response models
+│   ├── core/                     # security, ratelimit, metrics, middleware
+│   ├── db/                       # SQLAlchemy models (users, conversations, messages)
+│   ├── repositories/             # memory + postgres implementations
+│   ├── services/                 # auth, conversations, jobs, auto-ingest watcher
+│   ├── ingestion/                # parser, cleaner, chunker, embedder, pipeline
+│   ├── retrieval/                # hybrid (BM25 + dense), reranker
+│   └── generation/               # LLM clients, generation pipeline, verification
 │
-├── ui/
-│   ├── app.py                     # Streamlit dashboard
-│   └── components/
-│       ├── uploader.py
-│       ├── evidence_viewer.py
-│       └── confidence_gauge.py
+├── frontend/                     # Next.js 15 web app (TypeScript + Tailwind)
+│   ├── app/                      # App Router pages (chat, search, admin, ...)
+│   ├── components/               # UI primitives + chat components
+│   ├── stores/                   # Zustand stores (auth, chat, settings)
+│   ├── lib/                      # API client, types, utils
+│   ├── tests/                    # Vitest + Testing Library
+│   ├── Dockerfile / nginx.conf   # standalone Next build served behind nginx
+│   └── package.json
 │
-├── scripts/
-│   ├── ingest_corpus.py           # CLI bulk ingestion
-│   ├── build_index.py
-│   ├── evaluate.py                # Run evaluation suite
-│   └── download_models.py
-│
-├── tests/
-│   ├── conftest.py
-│   ├── test_chunker.py
-│   ├── test_retrieval.py
-│   ├── test_verification.py
-│   └── test_api.py
-│
-├── evaluation/
-│   ├── datasets/                  # Golden QA + citations
-│   ├── baselines/                 # Naive RAG baseline
-│   └── metrics.py                 # Faithfulness, citation accuracy...
-│
-├── docs/
-│   ├── research/
-│   │   ├── paper.md               # IEEE paper draft
-│   │   └── experiments.md         # Experiment logs
-│   └── architecture.md
-│
+├── tests/                        # Backend test suite (Pytest)
+├── alembic/                      # Database migrations
 ├── data/
-│   ├── raw/                       # Source PDFs (gitignored)
-│   ├── processed/
-│   └── corpus.db
+│   ├── raw/                      # Source documents (gitignored)
+│   └── raw_documents/            # Auto-ingest watch directory
 │
-├── docker/
-│   ├── Dockerfile.api
-│   ├── Dockerfile.ui
-│   └── docker-compose.yml
-│
-├── configs/
-│   ├── settings.yaml
-│   └── prompts.yaml
-│
+├── docker-compose.yml            # qdrant + postgres + redis + api + web
+├── Dockerfile                    # Backend image
+├── pyproject.toml                # Python deps + dev tooling
 ├── .env.example
-├── .gitignore
-├── requirements.txt
-├── pyproject.toml
 └── README.md
 ```
 
@@ -355,19 +290,21 @@ legal-ai-rag/
 |---|---|---|
 | **Language** | Python 3.10+ | De facto standard for NLP/ML; richest ecosystem of legal-NLP and RAG tooling |
 | **API Framework** | FastAPI + Uvicorn | Async, typed, auto-generated OpenAPI docs; production-grade and easy to demo |
+| **Web Frontend** | Next.js 15 + React 19 + TypeScript + Tailwind CSS | Server components, streaming UI, static export for the landing pages |
+| **State / Data Fetching** | Zustand + Axios | Lightweight global state and an API client with auth, CSRF, and token refresh |
 | **PDF Parsing** | PyMuPDF / pdfplumber | Layout-aware extraction that preserves headings, page numbers, and section structure |
-| **Chunking/Summarization** | Custom + `langchain-text-splitters`, LLM summarizer | Enables *summary-augmented* chunking, the core research contribution |
 | **Dense Embeddings** | Sentence-Transformers (`bge-base-en-v1.5`) | Strong semantic retrieval, multilingual support, fine-tunable on legal corpus |
-| **Lexical Retrieval** | Rank-BM25 (or Qdrant full-text) | Exact matching for § symbols, case names, and citations that vectors miss |
+| **Lexical Retrieval** | BM25 (Qdrant full-text or local `rank-bm25`) | Exact matching for § symbols, case names, and citations that vectors miss |
 | **Vector Database** | Qdrant | High-performance HNSW indexing, native payload filtering, hybrid search, easy Docker deploy |
 | **Re-ranking** | Cross-Encoder (`cross-encoder/ms-marco-MiniLM-L6-v2`) | Precision re-scoring of candidates for final evidence selection |
-| **LLM** | Llama 3 / Mistral (local) or OpenAI-compatible API | Generation is pluggable; local models keep the system private and offline-friendly |
-| **NLI / Entailment** | Hugging Face `text-classification` NLI models | Detects whether a claim is supported/contradicted by evidence |
-| **Metadata Store** | PostgreSQL / Redis | Job tracking, audit logs, caching of frequent queries |
-| **Model Registry** | MLflow | Versioning of embedders, re-rankers, and LLM configs for reproducible research |
-| **Orchestration** | Docker Compose | One-command environment with Qdrant, API, UI, and storage |
-| **UI** | Streamlit | Rapid, interactive prototype for demos and portfolio presentation |
-| **Evaluation** | RAGAS + custom metrics | Standardized faithfulness/relevance metrics plus custom citation accuracy |
+| **LLM** | Pluggable: `claude` / `openai` / `gemini` / `llama` / `mock` | Generation is provider-agnostic; `mock` runs offline with zero API keys |
+| **Metadata Store** | PostgreSQL 16 + SQLAlchemy (async) + Alembic | Users, conversations, messages, share links, API usage |
+| **Cache / Rate Limit** | Redis | Rate limiting and caching, with an automatic in-memory fallback |
+| **Auth** | JWT + refresh-token rotation, bcrypt, CSRF, HttpOnly cookies | Session-safe auth with cookie/CSRF defaults for a web app |
+| **Monitoring** | Prometheus | `/metrics` endpoint for HTTP/LLM/retrieval counters |
+| **Orchestration** | Docker Compose | One-command environment with Qdrant, Postgres, Redis, API, and web |
+| **Evaluation** | RAGAS-style metrics + verification/hallucination scorers | Faithfulness, relevance, citation accuracy, and hallucination rate |
+| **CI** | GitHub Actions | Backend tests + lint, frontend typecheck/test/build, Docker builds |
 
 ---
 
@@ -399,7 +336,7 @@ legal-ai-rag/
 ### Phase 4 — Confidence + Explainability *(Week 5)*
 - Confidence scoring model.
 - Evidence panels + warning banners.
-- Streamlit UI. ✅ *Milestone: demo-ready system*
+- Next.js UI. ✅ *Milestone: demo-ready system*
 
 ### Phase 5 — Evaluation & Ablation *(Week 6)*
 - Golden dataset construction.
@@ -518,69 +455,70 @@ Final Response         → answer + citations + sources + confidence
 
 ### Prerequisites
 
-- Python **3.10+**
-- Docker + Docker Compose (for Qdrant and full stack)
+- **Python 3.10+** (developed on 3.14)
+- **Node.js 20+** and npm (for the Next.js frontend)
+- **Docker + Docker Compose** (for Qdrant, PostgreSQL, Redis, and the full stack)
 - `pip` and a virtual environment
-- *(Optional)* GPU for fine-tuning embedders / larger local LLMs
 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/<your-username>/legal-ai-rag.git
-cd legal-ai-rag
+git clone https://github.com/vvvvvivekkk/-hallucination-legal-ai.git
+cd -hallucination-legal-ai
 ```
 
-### 2. Create a Virtual Environment
+### 2. Backend — Virtual Environment & Dependencies
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate        # macOS / Linux
 # .venv\Scripts\activate         # Windows
-```
 
-### 3. Install Dependencies
-
-```bash
 pip install --upgrade pip
-pip install -r requirements.txt
+pip install -e ".[dev]"
 ```
 
-### 4. Start Qdrant (Vector Database)
+### 3. Frontend — Install npm Dependencies
 
 ```bash
-docker run -d \
-  --name qdrant \
-  -p 6333:6333 \
-  -p 6334:6334 \
-  -v $(pwd)/data/qdrant_storage:/qdrant/storage \
-  qdrant/qdrant:latest
+cd frontend
+npm install
+cd ..
 ```
 
-> Or run the whole stack: `docker compose up -d` (Qdrant + API + UI).
-
-### 5. Configure Environment
+### 4. Configure Environment
 
 ```bash
 cp .env.example .env
-# edit .env with your API keys and settings
+# edit .env with your LLM API key and settings (see below)
 ```
 
-### 6. Download Models
+### 5. Start the Infrastructure (Qdrant + PostgreSQL + Redis)
 
 ```bash
-python scripts/download_models.py
+docker compose up -d qdrant postgres redis
 ```
 
-Downloads the embedder, cross-encoder re-ranker, and NLI model (cached locally).
+### 6. Apply Database Migrations
+
+```bash
+alembic upgrade head
+```
 
 ### 7. Ingest Your Legal Corpus
 
+Place source documents in `data/raw_documents/` (watched automatically) or `data/raw/`, then
+queue an ingestion job through the API:
+
 ```bash
-# place PDFs in data/raw/ then run:
-python scripts/ingest_corpus.py --input data/raw --collection legal_corpus
+curl -X POST http://localhost:8000/api/ingest \
+  -H "Content-Type: application/json" \
+  -d '{"path": "data/raw_documents"}'
 ```
 
-### 8. Launch the API
+Track progress at `GET /api/jobs`.
+
+### 8. Launch the Backend API
 
 ```bash
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
@@ -588,71 +526,60 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 Interactive docs: **http://localhost:8000/docs**
 
-### 9. Launch the Web UI
+### 9. Launch the Web Frontend
 
 ```bash
-streamlit run ui/app.py
+cd frontend
+npm run dev
 ```
 
-Open **http://localhost:8501**
+Open **http://localhost:3000**
 
 ---
 
 ## 🔐 Environment Variables
 
+The full list lives in [`.env.example`](.env.example) — copy it to `.env` and edit. The most
+important settings:
+
 ```bash
-# ── Core ────────────────────────────────────────────────
-PROJECT_NAME="Legal AI RAG"
-ENVIRONMENT=development
-LOG_LEVEL=INFO
-
-# ── Qdrant ──────────────────────────────────────────────
-QDRANT_URL=http://localhost:6333
-QDRANT_API_KEY=
-QDRANT_COLLECTION=legal_corpus
-EMBEDDING_DIM=768
-
-# ── Models ──────────────────────────────────────────────
-EMBEDDING_MODEL=BAAI/bge-base-en-v1.5
-RERANKER_MODEL=cross-encoder/ms-marco-MiniLM-L6-v2
-NLI_MODEL=MoritzLaurer/mDeBERTa-v3-base-mnli-xnli
-
-# ── LLM ─────────────────────────────────────────────────
-LLM_PROVIDER=openai            # openai | ollama | together | anthropic
-LLM_MODEL=gpt-4o-mini          # or llama3.1, mistral-7b...
+# ── LLM (mock needs no API key) ────────────────────────
+LLM_PROVIDER=mock            # claude | openai | gemini | llama | mock
+LLM_MODEL=gpt-4o-mini
+LLM_BASE_URL=                # OpenAI-compatible local servers (llama.cpp, Ollama, vLLM)
 LLM_API_KEY=
-LLM_API_BASE=
-LLM_TEMPERATURE=0.1            # low temperature = factual answers
-LLM_MAX_TOKENS=1024
 
-# ── Ingestion ───────────────────────────────────────────
-CHUNK_SIZE=600
-CHUNK_OVERLAP=100
-ENABLE_SUMMARY_AUGMENT=true
-SUMMARY_MAX_TOKENS=150
+# ── Qdrant ─────────────────────────────────────────────
+QDRANT_URL=http://localhost:6333
+QDRANT_COLLECTION=legal_corpus
 
-# ── Retrieval ───────────────────────────────────────────
-TOP_K=10
-RERANK_TOP_K=5
-HYBRID_WEIGHT_DENSE=0.5         # dense / lexical fusion weight
-RRF_K=60
-
-# ── Verification ────────────────────────────────────────
-ENTAILMENT_THRESHOLD=0.55
-CITATION_VERIFY=true
-CONFIDENCE_FLOOR=0.4            # answers below this get a warning
-
-# ── Storage ─────────────────────────────────────────────
-METADATA_DB_URL=sqlite:///data/corpus.db
+# ── Database / Redis (leave unset → in-memory fallbacks) ──
+DATABASE_URL=postgresql://legalai:legalai@localhost:5432/legalai
 REDIS_URL=redis://localhost:6379/0
-MINIO_ENDPOINT=localhost:9000
+
+# ── Auth ───────────────────────────────────────────────
+# IMPORTANT: set a long random value in production
+JWT_SECRET=change-me-in-production-please-rotate-this-secret
+
+# ── Rate limiting ──────────────────────────────────────
+RATE_LIMIT_ENABLED=true
+RATE_LIMIT_REQUESTS=120
+RATE_LIMIT_WINDOW_SECONDS=60
+
+# ── Auto ingestion ─────────────────────────────────────
+AUTO_INGEST_WATCH_DIR=data/raw_documents
+AUTO_INGEST_INTERVAL_SECONDS=60
+AUTO_INGEST_ENABLED=true
 ```
+
+> **Dev shortcut:** with `DATABASE_URL` unset the backend runs on in-memory repositories and an
+> in-memory rate limiter, so you can exercise the full API without Postgres or Redis.
 
 ---
 
 ## ▶️ Running the Project
 
-### One-Command Stack
+### Option A — Full Stack with Docker Compose (recommended)
 
 ```bash
 docker compose up -d --build
@@ -660,23 +587,82 @@ docker compose up -d --build
 
 | Service | URL |
 |---|---|
+| Web UI (Next.js) | http://localhost:3000 |
 | FastAPI + Swagger | http://localhost:8000/docs |
-| Streamlit UI | http://localhost:8501 |
+| Health check | http://localhost:8000/api/health |
 | Qdrant Dashboard | http://localhost:6333/dashboard |
+| PostgreSQL | localhost:5432 (legalai / legalai / legalai) |
+| Redis | localhost:6379 |
+
+### Option B — Local Development
+
+```bash
+# Terminal 1 — backend (http://localhost:8000)
+source .venv/bin/activate
+uvicorn app.main:app --reload
+
+# Terminal 2 — frontend (http://localhost:3000)
+cd frontend
+npm run dev
+
+# Terminal 3 — infrastructure (Qdrant + Postgres + Redis)
+docker compose up -d qdrant postgres redis
+```
+
+The Next.js dev server proxies `/api/*` to the backend, so no extra CORS config is needed.
+
+### Key API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/auth/register` | Create account (returns JWT + refresh token) |
+| `POST` | `/api/auth/login` | Sign in |
+| `POST` | `/api/auth/refresh` | Rotate the refresh token |
+| `POST` | `/api/auth/logout` | End the current session |
+| `GET` | `/api/auth/me` | Current user profile |
+| `POST` | `/api/conversations/chat` | Chat with a conversation (non-streaming) |
+| `POST` | `/api/conversations/chat/stream` | Chat with a streaming (NDJSON) response |
+| `GET` | `/api/conversations` | List conversations (`?pinned=&search=&limit=`) |
+| `GET` | `/api/conversations/{id}` | Conversation detail with messages |
+| `GET` | `/api/conversations/{id}/export` | Markdown export |
+| `POST` | `/api/conversations/{id}/share` | Create a public share link |
+| `GET` | `/api/share/{slug}` | Public conversation view (no auth) |
+| `POST` | `/api/query` | Stateless generation (retrieve + answer + verify) |
+| `POST` | `/api/search` | Hybrid corpus search |
+| `POST` | `/api/ingest` | Queue a directory ingestion job |
+| `GET` | `/api/jobs` | List ingestion jobs |
+| `GET` | `/api/admin/stats` | System stats (admin only) |
+| `GET` | `/metrics` | Prometheus metrics |
 
 ### Quickstart Demo
 
 ```bash
-# 1. upload documents via UI (or CLI)
-python scripts/ingest_corpus.py --input data/raw
+# 1. register a user
+curl -X POST http://localhost:8000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com","password":"password123","full_name":"You"}'
 
-# 2. ask a question via CLI
-curl -X POST http://localhost:8000/ask \
+# 2. ask a question (stateless, no auth required)
+curl -X POST http://localhost:8000/api/query \
   -H "Content-Type: application/json" \
   -d '{"query": "What are the essential ingredients of murder under Section 300 IPC?"}'
 
-# 3. run the evaluation suite
-python scripts/evaluate.py --dataset evaluation/datasets/golden_v1.json
+# 3. queue an ingestion job
+curl -X POST http://localhost:8000/api/ingest \
+  -H "Content-Type: application/json" \
+  -d '{"path": "data/raw_documents"}'
+```
+
+### Running Tests
+
+```bash
+# backend (from repo root, with venv active)
+python -m pytest tests/ -q
+
+# frontend
+cd frontend
+npm run typecheck
+npm test
 ```
 
 ### Sample Response
