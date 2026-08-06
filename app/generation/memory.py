@@ -88,7 +88,8 @@ class ConversationMemory:
         self._sessions[session_id] = pruned
 
     def _prune_sessions(self) -> None:
-        if len(self._sessions) <= self._max_sessions:
+        overflow = len(self._sessions) - (self._max_sessions - 1)
+        if overflow <= 0:
             return
-        for session_id in list(self._sessions)[: len(self._sessions) - self._max_sessions]:
+        for session_id in list(self._sessions)[:overflow]:
             del self._sessions[session_id]

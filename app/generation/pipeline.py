@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import time
 from typing import Any, AsyncIterator
 
@@ -25,6 +26,10 @@ from .models import (
 from .prompts import PromptBuilder
 from .ranking import ResponseRanker
 from .verification import CitationVerifier
+
+
+def _ndjson(event: dict[str, Any]) -> str:
+    return json.dumps(event, ensure_ascii=False, default=str) + "\n"
 
 
 class GenerationPipeline:
@@ -182,7 +187,8 @@ class GenerationPipeline:
                 *(self._llm.generate(prompt, system=system) for _ in range(num_responses))
             )
             candidates = [
-                await self._postprocess(query, text, chunks, session_id) for text in texts
+                await self._postprocess(query, response.text, chunks, session_id)
+                for response in texts
             ]
             ranked = self._ranker.rank(candidates)
             result = ranked[0] if ranked else await self._postprocess(query, "", chunks, session_id)
@@ -207,12 +213,12 @@ class GenerationPipeline:
         chunks = await self._retrieve(query, filters, top_k)
         history = self._memory.messages(session_id) if session_id else None
         system, prompt = self._prompts.build_messages(query, chunks, history)
-        yield {"type": "start", "query": query}
+        yield _ndjson({"type": "start", "query": query})
 
         parts: list[str] = []
         async for token in self._llm.stream(prompt, system=system):
             parts.append(token)
-            yield {"type": "token", "text": token}
+            yield _ndjson({"type": "token", "text": token})
 
         answer = "".join(parts)
         result = await self._postprocess(query, answer, chunks, session_id)
@@ -220,7 +226,7 @@ class GenerationPipeline:
         if session_id:
             self._memory.add(session_id, "user", query)
             self._memory.add(session_id, "assistant", answer)
-        yield {"type": "result", "result": result.to_dict()}
+        yield _ndjson({"type": "result", "result": result.to_dict()})
 
     async def verify(
         self,

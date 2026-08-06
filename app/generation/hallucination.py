@@ -15,7 +15,7 @@ from .text import best_containment, containment, sentences, significant_tokens
 
 _NEGATORS = {
     "not", "no", "never", "cannot", "cant", "won't", "wont", "without",
-    "except", "nor", "neither", "none", "lack", "absence", "denied",
+    "except", "nor", "neither", "none", "lack", "absence",
 }
 
 _SEVERITY_WEIGHTS = {"high": 1.0, "medium": 0.5, "low": 0.25}
