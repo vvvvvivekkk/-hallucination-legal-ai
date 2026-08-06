@@ -99,6 +99,23 @@ services:
     networks:
       - legal-ai
 
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: legal-ai-web
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - legal-ai
+
 volumes:
   qdrant_data:
   postgres_data:
