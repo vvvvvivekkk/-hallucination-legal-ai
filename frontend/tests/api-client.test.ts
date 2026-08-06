@@ -1,10 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import axios from "axios";
+import { beforeEach, describe, expect, it } from "vitest";
 import { ApiError, api, getCsrfToken } from "@/lib/api";
+
+function mockRejectionOnce(error: unknown) {
+  api.instance.defaults.adapter = async () => {
+    throw error;
+  };
+}
 
 describe("ApiError", () => {
   it("parses the backend error envelope", async () => {
-    vi.spyOn(api.instance, "get").mockRejectedValueOnce({
+    mockRejectionOnce({
       response: {
         status: 409,
         data: { error: { code: "email_taken", message: "Email already registered" } },
@@ -20,11 +25,12 @@ describe("ApiError", () => {
   });
 
   it("is an instance of ApiError", async () => {
-    vi.spyOn(api.instance, "get").mockRejectedValueOnce({
+    mockRejectionOnce({
       response: { status: 500, data: { error: { code: "internal", message: "boom" } } },
     });
     try {
       await api.get("/x");
+      throw new Error("expected request to reject");
     } catch (error) {
       expect(error).toBeInstanceOf(ApiError);
     }
