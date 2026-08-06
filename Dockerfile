@@ -37,7 +37,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN mkdir -p /app/data/raw /app/data/cache \
+RUN mkdir -p /app/data/raw /app/data/raw_documents /app/data/cache \
     && useradd -m -u 1000 appuser \
     && chown -R appuser:appuser /app
 

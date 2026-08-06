@@ -12,6 +12,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.api import dependencies
+from app.api import security_deps
 from app.config import Settings
 from app.ingestion.pipeline import IngestionPipeline, IngestTask
 from app.main import app
@@ -158,3 +159,16 @@ def client(fake_store: FakeStore, fake_embedder: FakeEmbedder):
 @pytest.fixture
 def project_root() -> Path:
     return Path(__file__).resolve().parent.parent
+
+
+@pytest.fixture(autouse=True)
+def _reset_app_state():
+    store = security_deps.get_memory_store()
+    store.users.clear()
+    store.sessions.clear()
+    store.conversations.clear()
+    store.messages.clear()
+    store.shares.clear()
+    security_deps._memory_limiter = None
+    yield
+    app.dependency_overrides.clear()

@@ -12,11 +12,13 @@ class LegalAIError(Exception):
         message: str = "An unexpected error occurred.",
         details: Any = None,
         *,
+        code: str | None = None,
         cause: Exception | None = None,
     ) -> None:
         super().__init__(message)
         self.message = message
         self.details = details
+        self.code = code or type(self).code
         if cause is not None:
             self.__cause__ = cause
 
@@ -64,3 +66,38 @@ class RetrievalError(LegalAIError):
 class DuplicateDocumentError(LegalAIError):
     status_code = 409
     code = "duplicate_document"
+
+
+class AuthenticationError(LegalAIError):
+    status_code = 401
+    code = "authentication_error"
+
+
+class AuthorizationError(LegalAIError):
+    status_code = 403
+    code = "authorization_error"
+
+
+class UserAlreadyExistsError(LegalAIError):
+    status_code = 409
+    code = "user_already_exists"
+
+
+class RateLimitExceededError(LegalAIError):
+    status_code = 429
+    code = "rate_limit_exceeded"
+
+
+class NotFoundError(LegalAIError):
+    status_code = 404
+    code = "not_found"
+
+
+class ConflictError(LegalAIError):
+    status_code = 409
+    code = "conflict"
+
+
+class ServiceUnavailableError(LegalAIError):
+    status_code = 503
+    code = "service_unavailable"

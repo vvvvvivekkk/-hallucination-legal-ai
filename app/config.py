@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     version: str = "0.1.0"
     log_level: str = "INFO"
     log_json: bool = False
+    public_base_url: str = "http://localhost:8000"
 
     qdrant_url: str = "http://localhost:6333"
     qdrant_api_key: str | None = None
@@ -91,6 +92,52 @@ class Settings(BaseSettings):
     evidence_min_overlap: float = 0.15
     evidence_contradiction_threshold: float = 0.6
     unsupported_claim_threshold: float = 0.25
+
+    # ── Authentication ───────────────────────────────────
+    jwt_secret: str = "change-me-in-production-please-rotate-this-secret"
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_minutes: int = 15
+    jwt_refresh_token_days: int = 30
+    jwt_issuer: str = "legal-ai-rag"
+    jwt_audience: str = "legal-ai-rag-web"
+    password_min_length: int = 8
+    bcrypt_rounds: int = 12
+    cookie_secure: bool = False
+    cookie_samesite: str = "lax"
+    cookie_domain: str | None = None
+    access_token_cookie_name: str = "access_token"
+    refresh_token_cookie_name: str = "refresh_token"
+    csrf_header_name: str = "x-csrf-token"
+
+    # ── Database ─────────────────────────────────────────
+    database_url: str | None = None
+    db_echo: bool = False
+    db_pool_size: int = 10
+    db_max_overflow: int = 20
+
+    # ── Redis ────────────────────────────────────────────
+    redis_url: str | None = None
+    redis_prefix: str = "legal-ai:"
+    redis_socket_timeout: float = 3.0
+
+    # ── Rate limiting ────────────────────────────────────
+    rate_limit_enabled: bool = True
+    rate_limit_requests: int = 120
+    rate_limit_window_seconds: int = 60
+    auth_rate_limit_requests: int = 10
+    auth_rate_limit_window_seconds: int = 300
+
+    # ── Monitoring ───────────────────────────────────────
+    enable_prometheus: bool = True
+    enable_request_logging: bool = True
+    otel_exporter_endpoint: str | None = None
+    sentry_dsn: str | None = None
+    sentry_traces_sample_rate: float = 0.1
+
+    # ── Auto ingestion ───────────────────────────────────
+    auto_ingest_watch_dir: str = str(PROJECT_ROOT / "data" / "raw_documents")
+    auto_ingest_interval_seconds: int = 60
+    auto_ingest_enabled: bool = True
 
     @field_validator("bm25_backend")
     @classmethod
