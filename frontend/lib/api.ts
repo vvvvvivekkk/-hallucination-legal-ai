@@ -148,8 +148,6 @@ class ApiClient {
 
 export const api = new ApiClient();
 
-export interface MeResponse extends User {}
-
 export async function fetchMe(): Promise<User> {
   return api.get<User>("/api/auth/me");
 }
