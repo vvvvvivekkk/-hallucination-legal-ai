@@ -67,12 +67,44 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["*"]
 
+    llm_provider: str = "mock"
+    llm_model: str = "gpt-4o-mini"
+    llm_base_url: str | None = None
+    llm_api_key: str | None = None
+    llm_temperature: float = 0.2
+    llm_max_tokens: int = 1024
+    llm_timeout_seconds: int = 120
+    llm_max_retries: int = 3
+    llm_mock_response: str = ""
+    llm_json_instruction: bool = True
+
+    generation_top_k: int = 5
+    generation_max_sessions: int = 1000
+    conversation_max_turns: int = 20
+    conversation_max_chars: int = 12000
+    num_candidate_responses: int = 1
+
+    enable_citation_verification: bool = True
+    enable_hallucination_detection: bool = True
+    enable_confidence_scoring: bool = True
+    enable_llm_verification: bool = False
+    evidence_min_overlap: float = 0.15
+    evidence_contradiction_threshold: float = 0.6
+    unsupported_claim_threshold: float = 0.25
+
     @field_validator("bm25_backend")
     @classmethod
     def _validate_bm25_backend(cls, value: str) -> str:
         if value not in {"qdrant", "local"}:
             raise ValueError("bm25_backend must be 'qdrant' or 'local'")
         return value
+
+    @field_validator("llm_provider")
+    @classmethod
+    def _validate_llm_provider(cls, value: str) -> str:
+        if value.lower() not in {"claude", "openai", "gemini", "llama", "mock"}:
+            raise ValueError("llm_provider must be one of 'claude', 'openai', 'gemini', 'llama', 'mock'")
+        return value.lower()
 
     @field_validator("hybrid_weight_dense")
     @classmethod

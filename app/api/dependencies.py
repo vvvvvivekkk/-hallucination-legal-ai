@@ -6,6 +6,9 @@ from fastapi import Depends
 
 from ..config import Settings
 from ..core.logger import get_logger
+from ..generation.llm import LLMConfig, build_llm
+from ..generation.memory import ConversationMemory
+from ..generation.pipeline import GenerationPipeline
 from ..ingestion.embedder import Embedder, EmbeddingCache
 from ..ingestion.pipeline import IngestionPipeline
 from ..retrieval.bm25 import LocalBm25Index
@@ -23,7 +26,8 @@ def get_settings() -> Settings:
 
 
 @lru_cache(maxsize=1)
-def get_store(settings: Settings = Depends(get_settings)) -> QdrantStore:
+def get_store() -> QdrantStore:
+    settings = get_settings()
     return QdrantStore(
         url=settings.qdrant_url,
         api_key=settings.qdrant_api_key,
@@ -37,7 +41,8 @@ def get_store(settings: Settings = Depends(get_settings)) -> QdrantStore:
 
 
 @lru_cache(maxsize=1)
-def get_local_bm25(settings: Settings = Depends(get_settings)) -> LocalBm25Index:
+def get_local_bm25() -> LocalBm25Index:
+    settings = get_settings()
     index = LocalBm25Index(
         k1=settings.bm25_k1,
         b=settings.bm25_b,
@@ -49,7 +54,8 @@ def get_local_bm25(settings: Settings = Depends(get_settings)) -> LocalBm25Index
 
 
 @lru_cache(maxsize=1)
-def get_embedder(settings: Settings = Depends(get_settings)) -> Embedder:
+def get_embedder() -> Embedder:
+    settings = get_settings()
     cache = EmbeddingCache(settings.embedding_cache_path) if settings.embedding_cache_path else None
     return Embedder(
         model_name=settings.embedding_model,
@@ -99,15 +105,58 @@ def get_jobs() -> JobManager:
 
 @lru_cache(maxsize=1)
 def get_pipeline(
-    settings: Settings = Depends(get_settings),
     store: QdrantStore = Depends(get_store),
     embedder: Embedder = Depends(get_embedder),
     local_bm25: LocalBm25Index = Depends(get_local_bm25),
 ) -> IngestionPipeline:
+    settings = get_settings()
     return IngestionPipeline(
         settings=settings,
         store=store,
         embedder=embedder,
         local_bm25=local_bm25 if settings.bm25_backend == "local" else None,
+        logger=logger,
+    )
+
+
+@lru_cache(maxsize=1)
+def get_llm():
+    settings = get_settings()
+    config = LLMConfig(
+        provider=settings.llm_provider,
+        model=settings.llm_model,
+        base_url=settings.llm_base_url,
+        api_key=settings.llm_api_key,
+        temperature=settings.llm_temperature,
+        max_tokens=settings.llm_max_tokens,
+        timeout_seconds=settings.llm_timeout_seconds,
+        max_retries=settings.llm_max_retries,
+        mock_response=settings.llm_mock_response,
+        json_instruction=settings.llm_json_instruction,
+    )
+    return build_llm(config, logger)
+
+
+@lru_cache(maxsize=1)
+def get_memory() -> ConversationMemory:
+    settings = get_settings()
+    return ConversationMemory(
+        max_turns=settings.conversation_max_turns,
+        max_chars=settings.conversation_max_chars,
+        max_sessions=settings.generation_max_sessions,
+    )
+
+
+def get_generation(
+    settings: Settings = Depends(get_settings),
+    retriever: HybridRetriever = Depends(get_retriever),
+    llm=Depends(get_llm),
+    memory: ConversationMemory = Depends(get_memory),
+) -> GenerationPipeline:
+    return GenerationPipeline(
+        settings=settings,
+        retriever=retriever,
+        llm=llm,
+        memory=memory,
         logger=logger,
     )

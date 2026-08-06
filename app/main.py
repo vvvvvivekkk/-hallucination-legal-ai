@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from . import __version__
 from .api.dependencies import get_settings
 from .api.errors import register_exception_handlers
+from .api.routes import generation as generation_routes
 from .api.routes import health as health_routes
 from .api.routes import ingest as ingest_routes
 from .api.routes import search as search_routes
@@ -40,6 +41,7 @@ def create_app() -> FastAPI:
     )
     application.include_router(ingest_routes.router)
     application.include_router(search_routes.router)
+    application.include_router(generation_routes.router)
     application.include_router(health_routes.router)
     register_exception_handlers(application)
     return application
