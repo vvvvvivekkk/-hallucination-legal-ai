@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "legal-ai-rag"
 version = "0.1.0"
-description = "Reducing hallucinations in legal AI using retrieval-augmented generation - data ingestion and retrieval pipeline"
+description = "Reducing hallucinations in legal AI using retrieval-augmented generation - ingestion, hybrid retrieval, and verified generation pipeline"
 authors = ["Legal AI RAG Contributors"]
 license = "MIT"
 readme = "README.md"
@@ -23,10 +23,10 @@ rank-bm25 = "^0.2.2"
 Pillow = "^10.4.0"
 pytesseract = "^0.3.13"
 tenacity = "^8.5.0"
+httpx = "^0.27.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.0"
-httpx = "^0.27.0"
 ruff = "^0.6.0"
 mypy = "^1.11.0"
 

@@ -32,6 +32,11 @@ services:
       EMBEDDING_CACHE_PATH: /app/data/cache/embeddings.db
       DEDUP_STORE_PATH: /app/data/cache/dedup.json
       BM25_LOCAL_PATH: /app/data/cache/bm25.pkl
+      LLM_PROVIDER: ${LLM_PROVIDER:-mock}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      GENERATION_TOP_K: ${GENERATION_TOP_K:-5}
     volumes:
       - ./data/raw:/app/data/raw
       - ./data/cache:/app/data/cache
