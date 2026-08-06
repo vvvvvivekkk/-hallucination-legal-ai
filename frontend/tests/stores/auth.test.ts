@@ -24,7 +24,7 @@ const MOCK_USER = {
   id: "user-1",
   email: "ada@example.com",
   full_name: "Ada Lovelace",
-  role: "user",
+  role: "user" as const,
   is_active: true,
 };
 

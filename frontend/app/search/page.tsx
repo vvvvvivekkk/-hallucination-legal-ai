@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { truncate } from "@/lib/utils";
+import type { SearchHit } from "@/lib/types";
 
 interface SearchResponse {
   query: string;

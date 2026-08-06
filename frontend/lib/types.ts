@@ -98,6 +98,7 @@ export interface Message {
   latency_ms: number;
   tokens: number;
   created_at: string;
+  streaming?: boolean;
 }
 
 export interface ChatMessage {
